@@ -81,15 +81,12 @@ Sys_Init(
 
     HalI2cLcd_Init();
     HalLed_Init();
-    HalMotorDC_Init();
-    HalMotorDC2_Init();
-    HalMotorST_Init();
-    HalMotorSV_Init();
     HalPushSw_Init();
-    HalSensorBmx055_Init();
+//    HalSensorBmx055_Init();
 
     // SENSOR (ADC)
     HalSensorPm_Init();
+    HalSensorDist_Init();
 
     HalTime_Init();
 
@@ -113,15 +110,12 @@ Sys_Fini(
 
     HalI2cLcd_Fini();
     HalLed_Fini();
-    HalMotorDC_Fini();
-    HalMotorDC2_Fini();
-    HalMotorST_Fini();
-    HalMotorSV_Fini();
     HalPushSw_Fini();
     HalSensorBmx055_Fini();
 
     // SENSOR (ADC)
     HalSensorPm_Fini();
+    HalSensorDist_Fini();
 
 //  HalTime モジュールに Fini() 処理はない
 
@@ -153,7 +147,9 @@ Sys_ShowInfo(
     AppIfLcd_Ctrl( 1, 0, 0 );
 
     AppIfLcd_CursorSet( 0, 0 );
-    AppIfLcd_Printf( "RP3 BOARD SENSOR" );
+    AppIfLcd_Printf( "RP3 BOARD      " );
+    AppIfLcd_CursorSet( 0, 1 );
+    AppIfLcd_Printf( "SENSOR DISTANCE" );
     usleep( 2000 * 1000 );  // 2sec 表示
 
     AppIfLcd_CursorSet( 0, 1 );
@@ -184,7 +180,7 @@ Sys_ShowInfo(
     AppIfPc_Printf( "\n\r" );
     AppIfPc_Printf( "================================ \n\r" );
 
-    AppIfPc_Puts( "RP3 BOARD SENSOR\n\r" );
+    AppIfPc_Puts( "RP3 BOARD SENSOR DISTANCE\n\r" );
 
     AppIfPc_Puts( "Launch .... \n\r" );
     AppIfPc_Puts( "\n\r" );

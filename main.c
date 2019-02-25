@@ -67,9 +67,9 @@ static void         Run_Version( void );
 
 static void         Run_I2cLcd( int argc, char *argv[] );
 static void         Run_Led( char* str );
-static void         Run_MotorDC( char* str );
 
 static void         Run_Sa_Pm( char* str );
+static void         Run_Sa_Dist( char* str );
 
 static void         Run_Si_BMX055_Acc( char* str );
 static void         Run_Si_BMX055_Gyro( char* str );
@@ -106,12 +106,12 @@ Run_Help(
     printf( "                                  --i2clcd  --dir_x=<number>  --dir_y=<number>  --string=<string> \n\r" );
     printf("\x1b[39m");
     printf( "                                                               \n\r" );
-    printf( "  -d number, --motordc=number control the DC motor.            \n\r" );
-    printf( "  -e number, --motordc2=number control the DC motor2.          \n\r" );
-    printf( "                                                               \n\r" );
     printf( "  -l number, --led=number     control the LED.                 \n\r" );
     printf( "  -p [json], --sa_pm=[json]                                                  \n\r" );
     printf( "                              get the value of a sensor(A/D), Potentiometer. \n\r" );
+    printf( "                              json : get the all values of json format.      \n\r" );
+    printf( "  -q [json], --sa_dist=[json]                                                \n\r" );
+    printf( "                              get the value of a sensor(A/D), Distance.      \n\r" );
     printf( "                              json : get the all values of json format.      \n\r" );
     printf( "  -x {x|y|z|json}, --si_bmx055acc={x|y|z|json}                          \n\r" );
     printf( "                              get ACC of a sensor(I2C), BMX055.         \n\r" );
@@ -256,70 +256,6 @@ Run_Led(
 
 
 /**************************************************************************//*!
- * @brief     DC MOTOR を実行する
- * @attention なし。
- * @note      なし。
- * @sa        なし。
- * @author    Ryoji Morita
- * @return    なし。
- *************************************************************************** */
-static void
-Run_MotorDC(
-    char*           str     ///< [in] 文字列
-){
-    int             data = 0;
-    SHalSensor_t*   value;
-
-
-    DBG_PRINT_TRACE( "str = %s \n\r", str );
-
-    if( 0 == strncmp( str, "standby", strlen("standby") ) )
-    {
-        HalMotorDC_SetPwmDuty( EN_MOTOR_STANDBY, 0 );
-        HalMotorDC2_SetPwmDuty( EN_MOTOR_STANDBY, 0 );
-    } else if( 0 == strncmp( str, "pm", strlen("pm") ) )
-    {
-        while( EN_FALSE == HalPushSw_Get( EN_PUSH_SW_0 ) )
-        {
-            value = HalSensorPm_Get();
-            DBG_PRINT_TRACE( "value->cur_rate = %3d %% \n", value->cur_rate );
-
-            AppIfLcd_CursorSet( 0, 1 );
-            AppIfLcd_Printf( "%3d%%", value->cur_rate );
-
-            // SW1 が押されたら、MotorDC  の PWM Duty を変更する
-            // SW2 が押されたら、MotorDC2 の PWM Duty を変更する
-            if( EN_TRUE == HalPushSw_Get( EN_PUSH_SW_1 ) )
-            {
-                HalMotorDC_SetPwmDuty( EN_MOTOR_CW, value->cur_rate );
-            } else if( EN_TRUE == HalPushSw_Get( EN_PUSH_SW_2 ) )
-            {
-                HalMotorDC2_SetPwmDuty( EN_MOTOR_CW, value->cur_rate );
-            }
-        }
-
-        HalMotorDC_SetPwmDuty( EN_MOTOR_STOP, 0 );
-        HalMotorDC2_SetPwmDuty( EN_MOTOR_STOP, 0 );
-    } else if( 0 != isdigit( str[0] ) )
-    {
-        data = atoi( (const char*)str );
-        DBG_PRINT_TRACE( "data = %d \n", data );
-        HalMotorDC_SetPwmDuty( EN_MOTOR_CW, data );
-        HalMotorDC2_SetPwmDuty( EN_MOTOR_CW, data );
-    } else
-    {
-        DBG_PRINT_ERROR( "invalid argument error. : %s \n\r", str );
-        goto err;
-    }
-
-//  usleep( 1000 * 1000 );  // 2s 待つ
-
-err :
-    return;
-}
-
-
-/**************************************************************************//*!
  * @brief     ポテンショメーターを実行する
  * @attention なし。
  * @note      なし。
@@ -351,6 +287,71 @@ Run_Sa_Pm(
         printf( "{ " );
         printf( "  \"sensor\": \"sa_pm\"," );
         printf( "  \"value\": %3d,", data->cur_rate );
+        printf( "}" );
+    } else
+    {
+        DBG_PRINT_ERROR( "invalid argument error. : %s \n\r", str );
+        goto err;
+    }
+
+err :
+    return;
+}
+
+
+/**************************************************************************//*!
+ * @brief     距離センサを実行する
+ * @attention なし。
+ * @note      なし。
+ * @sa        なし。
+ * @author    Ryoji Morita
+ * @return    なし。
+ *************************************************************************** */
+static void
+Run_Sa_Dist(
+    char*           str     ///< [in] 文字列
+){
+    SHalSensor_t*   dataFL;
+    SHalSensor_t*   dataFR;
+    SHalSensor_t*   dataFSL;
+    SHalSensor_t*   dataFSR;
+
+    DBG_PRINT_TRACE( "str = %s \n\r", str );
+
+    if( str == NULL )
+    {
+        dataFL  = HalSensorDist_GetFL();
+        dataFR  = HalSensorDist_GetFR();
+        dataFSL = HalSensorDist_GetFSL();
+        dataFSR = HalSensorDist_GetFSR();
+        AppIfLcd_Clear();
+        AppIfLcd_CursorSet( 0, 0 );
+        AppIfLcd_Printf( "FL :%2d%%, FR :%2d%%", dataFL->cur_rate, dataFR->cur_rate );
+        AppIfLcd_CursorSet( 0, 1 );
+        AppIfLcd_Printf( "FSL:%2d%%, FSR:%2d%%", dataFSL->cur_rate, dataFSR->cur_rate );
+        printf( "( %3d%%, %3d%%, %3d%%, %3d%% )", dataFL->cur_rate, dataFR->cur_rate, dataFSL->cur_rate, dataFSR->cur_rate );
+    } else if( 0 == strncmp( str, "json", strlen("json") ) )
+    {
+        dataFL  = HalSensorDist_GetFL();
+        dataFR  = HalSensorDist_GetFR();
+        dataFSL = HalSensorDist_GetFSL();
+        dataFSR = HalSensorDist_GetFSR();
+
+        AppIfLcd_Clear();
+        AppIfLcd_CursorSet( 0, 0 );
+        AppIfLcd_Printf( "FL :%2d%%, FR :%2d%%", dataFL->cur_rate, dataFR->cur_rate );
+        AppIfLcd_CursorSet( 0, 1 );
+        AppIfLcd_Printf( "FSL:%2d%%, FSR:%2d%%", dataFSL->cur_rate, dataFSR->cur_rate );
+
+        printf( "{ " );
+        printf( "  \"sensor\": \"sa_dist\"," );
+        printf( "  \"value\":" );
+        printf( "  { " );
+        printf( "    \"fl\": %-3d,",  dataFL->cur_rate );
+        printf( "    \"fr\": %-3d,",  dataFR->cur_rate );
+        printf( "    \"fsl\": %-3d,", dataFSL->cur_rate );
+        printf( "    \"fsr\": %-3d,", dataFSR->cur_rate );
+        printf( "  }" );
         printf( "}" );
     } else
     {
@@ -569,15 +570,15 @@ err :
 int main(int argc, char *argv[ ])
 {
     int             opt = 0;
-    const char      optstring[] = "hvc:d:l:p::x:y:z:";
+    const char      optstring[] = "hvc:d:l:p::q::x:y:z:";
     const struct    option longopts[] = {
       //{ *name,           has_arg,           *flag, val }, // 説明
         { "help",          no_argument,       NULL,  'h' },
         { "version",       no_argument,       NULL,  'v' },
         { "i2clcd",        required_argument, NULL,  'c' },
-        { "motordc",       required_argument, NULL,  'd' },
         { "led",           required_argument, NULL,  'l' },
         { "sa_pm",         optional_argument, NULL,  'p' },
+        { "sa_dist",       optional_argument, NULL,  'q' },
         { "si_bmx055acc",  required_argument, NULL,  'x' },
         { "si_bmx055gyro", required_argument, NULL,  'y' },
         { "si_bmx055mag",  required_argument, NULL,  'z' },
@@ -626,9 +627,9 @@ int main(int argc, char *argv[ ])
         {
         case 'h': Run_Help(); break;
         case 'v': Run_Version(); break;
-        case 'd': Run_MotorDC( optarg ); break;
         case 'l': Run_Led( optarg ); break;
         case 'p': Run_Sa_Pm( optarg ); break;
+        case 'q': Run_Sa_Dist( optarg ); break;
         case 'x': Run_Si_BMX055_Acc( optarg ); break;
         case 'y': Run_Si_BMX055_Gyro( optarg ); break;
         case 'z': Run_Si_BMX055_Mag( optarg ); break;

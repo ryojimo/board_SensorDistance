@@ -171,6 +171,14 @@ EHalBool_t      HalSensorPm_Init( void );
 void            HalSensorPm_Fini( void );
 SHalSensor_t*   HalSensorPm_Get( void );
 
+// SENSOR (ADC) 距離センサ API
+EHalBool_t      HalSensorDist_Init( void );
+void            HalSensorDist_Fini( void );
+SHalSensor_t*   HalSensorDist_GetFL( void );
+SHalSensor_t*   HalSensorDist_GetFR( void );
+SHalSensor_t*   HalSensorDist_GetFSL( void );
+SHalSensor_t*   HalSensorDist_GetFSR( void );
+
 // SENSOR (I2C) BMX055 ACC API
 EHalBool_t      HalSensorBmx055_Init( void );
 void            HalSensorBmx055_Fini( void );
